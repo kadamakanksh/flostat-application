@@ -1,0 +1,79 @@
+name: flostat_application
+description: "A new Flutter project."
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.8
+
+  # HTTP & Network
+  http: ^1.5.0
+  dio: ^5.1.2
+
+  # Firebase
+  firebase_core: ^4.2.0
+  firebase_auth: ^6.1.1
+  firebase_messaging: ^16.0.3
+
+  # Environment Variables
+  flutter_dotenv: ^6.0.0
+
+  # MQTT
+  mqtt_client: ^10.1.0
+
+  # Notifications
+  flutter_local_notifications: ^17.1.1
+  flutter_secure_storage: ^9.2.4
+
+  # AWS Amplify
+  amplify_flutter: ^2.6.2
+  amplify_auth_cognito: ^2.6.2
+
+  # Charts & Reports
+  fl_chart: 1.1.1
+  syncfusion_flutter_pdf: ^31.2.2
+  printing: ^5.9.0
+  path_provider: ^2.1.5
+  provider: ^6.0.5
+
+  # File/Image Picker
+  image_picker: ^1.2.0
+  file_picker: ^10.3.3
+
+  # Utilities
+  uuid: ^4.2.0
+  shimmer: ^3.0.0
+  animated_text_kit: ^4.2.3
+  intl: ^0.20.2
+  shared_preferences: ^2.5.3
+  google_fonts: ^6.3.2
+  flutter_datetime_picker: ^1.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+
+  #   - images/a_dot_burr.jpeg
+  #   - images/a_dot_ham.jpeg
+
+  # To add custom fonts to your application, add a fonts section here
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic

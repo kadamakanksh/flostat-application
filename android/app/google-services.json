@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1071843966337",
+    "project_id": "flostatapplication",
+    "storage_bucket": "flostatapplication.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1071843966337:android:a88e124262d1320e993c80",
+        "android_client_info": {
+          "package_name": "com.example.flostat_application"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA8ehYM0J8rIMFXPFICNqhkDSepX6fH7go"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
