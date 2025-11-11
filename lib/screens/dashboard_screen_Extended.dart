@@ -1,5 +1,6 @@
 import 'package:flostat_application/screens/TANK/tank_full_screen.dart';
 import 'package:flostat_application/screens/TANK/tank_list_screen.dart';
+import 'package:flostat_application/screens/SUMP/sump_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../widgets/custom_drawer.dart';
@@ -42,18 +43,21 @@ class _DashboardScreenExtendedState extends State<DashboardScreenExtended>
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
-      final orgProvider = Provider.of<OrgProvider>(context, listen: false);
-
-      if (orgProvider.selectedOrgId != null) {
-        await deviceProvider.fetchDevices(orgProvider.selectedOrgId!);
-        await deviceProvider.fetchBlocks(orgProvider.selectedOrgId!);
-        await deviceProvider.fetchBlockModes(orgProvider.selectedOrgId!);
-      }
-
+      await _refreshData();
       await Future.delayed(const Duration(milliseconds: 120));
       if (mounted) _animController.forward();
     });
+  }
+
+  Future<void> _refreshData() async {
+    final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
+    final orgProvider = Provider.of<OrgProvider>(context, listen: false);
+
+    if (orgProvider.selectedOrgId != null) {
+      await deviceProvider.fetchDevices(orgProvider.selectedOrgId!);
+      await deviceProvider.fetchBlocks(orgProvider.selectedOrgId!);
+      await deviceProvider.fetchBlockModes(orgProvider.selectedOrgId!);
+    }
   }
 
   @override
@@ -63,7 +67,6 @@ class _DashboardScreenExtendedState extends State<DashboardScreenExtended>
   }
 
   Widget _bottomContent(String label, int count, IconData icon) {
-    // Device counts are now informational only
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -76,28 +79,21 @@ class _DashboardScreenExtendedState extends State<DashboardScreenExtended>
     );
   }
 
-  void _onBottomNavTapped(int index, List<Map<String, dynamic>> devices) {
+  void _onBottomNavTapped(int index, List<Map<String, dynamic>> allDevices) {
     final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
 
-    List<Map<String, dynamic>> filteredDevices = devices;
-    if (deviceProvider.selectedBlockId != null &&
-        deviceProvider.selectedBlockId != "") {
-      filteredDevices = devices
-          .where((d) => d['block_id'] == deviceProvider.selectedBlockId)
-          .toList();
-    }
+    final blockName = deviceProvider.selectedBlockId != null && deviceProvider.selectedBlockId != ""
+        ? (deviceProvider.blocks.firstWhere(
+                (b) => b['block_id'] == deviceProvider.selectedBlockId,
+                orElse: () => {'block_name': 'Unknown'})['block_name'] ??
+            'Unknown')
+        : null;
 
     switch (index) {
       case 0: // Tanks
-        final tanks = filteredDevices
+        final tanks = allDevices
             .where((d) => d['device_type'] == 'tank')
             .toList();
-        final blockName = deviceProvider.selectedBlockId != ""
-            ? (deviceProvider.blocks.firstWhere(
-                    (b) => b['block_id'] == deviceProvider.selectedBlockId,
-                    orElse: () => {'block_name': 'Unknown'})['block_name'] ??
-                'Unknown')
-            : null;
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -109,13 +105,22 @@ class _DashboardScreenExtendedState extends State<DashboardScreenExtended>
         );
         break;
       case 1: // Valves
-        // Placeholder: implement ValveListScreen or similar
         break;
       case 2: // Pumps
-        // Placeholder: implement PumpListScreen or similar
         break;
       case 3: // Sumps
-        // Placeholder: implement SumpListScreen or similar
+        final sumps = allDevices
+            .where((d) => d['device_type'] == 'sump')
+            .toList();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SumpListScreen(
+              sumps: sumps,
+              blockName: blockName,
+            ),
+          ),
+        );
         break;
     }
   }
@@ -126,10 +131,12 @@ class _DashboardScreenExtendedState extends State<DashboardScreenExtended>
     final deviceProvider = Provider.of<DeviceProvider>(context);
     final width = MediaQuery.of(context).size.width;
 
+    final allDevices = deviceProvider.devices;
+    
     final devices = deviceProvider.selectedBlockId == null ||
             deviceProvider.selectedBlockId == ""
-        ? deviceProvider.devices
-        : deviceProvider.devices
+        ? allDevices
+        : allDevices
             .where((d) => d['block_id'] == deviceProvider.selectedBlockId)
             .toList();
 
@@ -146,6 +153,12 @@ class _DashboardScreenExtendedState extends State<DashboardScreenExtended>
       appBar: AppBar(
         title: const Text("Dashboard"),
         backgroundColor: Colors.blue.shade600,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshData,
+          ),
+        ],
       ),
       drawer: const CustomDrawer(),
       body: SafeArea(

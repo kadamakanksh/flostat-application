@@ -1,49 +1,49 @@
-// lib/screens/TANK/tank_list_screen.dart
+// lib/screens/SUMP/sump_list_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '/providers/device_provider.dart';
-import 'tank_full_screen.dart';
+import 'sump_full_screen.dart';
 
-class TankListScreen extends StatelessWidget {
-  final List<Map<String, dynamic>> tanks;
+class SumpListScreen extends StatelessWidget {
+  final List<Map<String, dynamic>> sumps;
   final String? blockName;
 
-  const TankListScreen({super.key, required this.tanks, this.blockName});
+  const SumpListScreen({super.key, required this.sumps, this.blockName});
 
   @override
   Widget build(BuildContext context) {
     final deviceProvider = Provider.of<DeviceProvider>(context);
     
-    final updatedTanks = tanks.map((tank) {
+    final updatedSumps = sumps.map((sump) {
       return deviceProvider.devices.firstWhere(
-        (d) => d['device_id'] == tank['device_id'],
-        orElse: () => tank,
+        (d) => d['device_id'] == sump['device_id'],
+        orElse: () => sump,
       );
     }).toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(blockName != null ? "Tanks - $blockName" : "Tanks"),
-        backgroundColor: Colors.blue,
+        title: Text(blockName != null ? "Sumps - $blockName" : "Sumps"),
+        backgroundColor: Colors.teal,
       ),
-      body: updatedTanks.isEmpty
-          ? const Center(child: Text("No tanks available in this block"))
+      body: updatedSumps.isEmpty
+          ? const Center(child: Text("No sumps available in this block"))
           : ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: updatedTanks.length,
+              itemCount: updatedSumps.length,
               itemBuilder: (context, index) {
-                final tank = updatedTanks[index];
-                final String tankName = tank['device_name'] ?? "Tank";
-                final int currentLevel = int.tryParse(tank['status'].toString()) ?? 0;
-                final int minThreshold = int.tryParse(tank["min_threshold"]?.toString() ?? "0") ?? 0;
-                final int maxThreshold = int.tryParse(tank["max_threshold"]?.toString() ?? "100") ?? 100;
+                final sump = updatedSumps[index];
+                final String sumpName = sump['device_name'] ?? "Sump";
+                final int currentLevel = int.tryParse(sump['status'].toString()) ?? 0;
+                final int minThreshold = int.tryParse(sump["min_threshold"]?.toString() ?? "0") ?? 0;
+                final int maxThreshold = int.tryParse(sump["max_threshold"]?.toString() ?? "100") ?? 100;
 
-                Color tankColor = Colors.blue;
+                Color sumpColor = Colors.teal;
                 if (currentLevel <= minThreshold) {
-                  tankColor = Colors.red;
+                  sumpColor = Colors.red;
                 } else if (currentLevel >= maxThreshold) {
-                  tankColor = Colors.orange;
+                  sumpColor = Colors.orange;
                 }
 
                 return Card(
@@ -54,14 +54,14 @@ class TankListScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(tankName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text(sumpName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 12),
                         InkWell(
                           onTap: () async {
                             await Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => TankFullScreen(deviceId: tank['device_id'].toString()),
+                                builder: (_) => SumpFullScreen(deviceId: sump['device_id'].toString()),
                               ),
                             );
                           },
@@ -75,7 +75,7 @@ class TankListScreen extends StatelessWidget {
                                 widthFactor: (currentLevel / 100).clamp(0.0, 1.0),
                                 child: Container(
                                   height: 24,
-                                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: tankColor),
+                                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: sumpColor),
                                 ),
                               ),
                             ],

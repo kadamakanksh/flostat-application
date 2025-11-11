@@ -28,34 +28,63 @@ class DeviceProvider with ChangeNotifier {
   // ==========================================================
   // -------------------- FETCH DEVICES -----------------------
   // ==========================================================
-  Future<void> fetchDevices(String orgId) async {
-    selectedOrgId = orgId;
-    _loading = true;
-    notifyListeners();
+  // ==========================================================
+// -------------------- FETCH DEVICES -----------------------
+// ==========================================================
+Future<void> fetchDevices(String orgId) async {
+  selectedOrgId = orgId;
+  _loading = true;
+  notifyListeners();
 
-    try {
-      final response = await http.post(
-        Uri.parse(DeviceEndpoints.getOrgAllDevice),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${authProvider.token}'
-        },
-        body: jsonEncode({'org_id': orgId}),
-      );
+  try {
+    final response = await http.post(
+      Uri.parse(DeviceEndpoints.getOrgAllDevice),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${authProvider.token}'
+      },
+      body: jsonEncode({'org_id': orgId}),
+    );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        _devices = List<Map<String, dynamic>>.from(data['devices'] ?? []);
-      } else {
-        debugPrint("❌ Failed to fetch devices: ${response.body}");
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      _devices = List<Map<String, dynamic>>.from(data['devices'] ?? []);
+      
+      // ✅ FIX: API returns block_id as list [uuid] or [[uuid]] instead of string
+      // This causes filtering to fail because "uuid" != ["uuid"]
+      // Convert all block_id values from list to string
+      for (var device in _devices) {
+        var blockId = device['block_id'];
+        
+        // If block_id is a list, extract the string value
+        if (blockId is List && blockId.isNotEmpty) {
+          // Handle nested lists like [[uuid]] by unwrapping until we get the string
+          while (blockId is List && blockId.isNotEmpty) {
+            blockId = blockId[0];
+          }
+          // Update device with cleaned block_id
+          device['block_id'] = blockId?.toString();
+        }
       }
-    } catch (e) {
-      debugPrint("🚨 Error fetching devices: $e");
-    } finally {
-      _loading = false;
-      notifyListeners();
+      
+      // Debug: Show all sumps and their block_id values
+      debugPrint("=== FETCH DEVICES ===");
+      debugPrint("Total: ${_devices.length}");
+      final sumps = _devices.where((d) => d['device_type'] == 'sump').toList();
+      debugPrint("Sumps: ${sumps.length}");
+      for (var s in sumps) {
+        debugPrint("  ${s['device_name']} - block_id: ${s['block_id']}");
+      }
+    } else {
+      debugPrint("❌ Failed to fetch devices: ${response.body}");
     }
+  } catch (e) {
+    debugPrint("🚨 Error fetching devices: $e");
+  } finally {
+    _loading = false;
+    notifyListeners();
   }
+}
 
   // ==========================================================
   // -------------------- FETCH BLOCKS ------------------------

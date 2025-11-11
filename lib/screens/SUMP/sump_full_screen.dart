@@ -1,4 +1,4 @@
-// lib/screens/TANK/tank_full_screen.dart
+// lib/screens/SUMP/sump_full_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,26 +8,24 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:async';
 import 'package:intl/intl.dart';
-import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '/providers/device_provider.dart';
 import '/providers/org_provider.dart';
 import '/config/api_endpoints.dart';
 
-class TankFullScreen extends StatefulWidget {
+class SumpFullScreen extends StatefulWidget {
   final String deviceId;
 
-  const TankFullScreen({super.key, required this.deviceId});
+  const SumpFullScreen({super.key, required this.deviceId});
 
   @override
-  State<TankFullScreen> createState() => _TankFullScreenState();
+  State<SumpFullScreen> createState() => _SumpFullScreenState();
 }
 
-class _TankFullScreenState extends State<TankFullScreen> with TickerProviderStateMixin {
+class _SumpFullScreenState extends State<SumpFullScreen> with TickerProviderStateMixin {
   late AnimationController _waveController;
   late AnimationController _shakeController;
-  List<Map<String, dynamic>> _schedules = [];
   List<Map<String, dynamic>> _reports = [];
   Timer? _reportTimer;
 
@@ -36,7 +34,6 @@ class _TankFullScreenState extends State<TankFullScreen> with TickerProviderStat
     super.initState();
     _waveController = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat();
     _shakeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
-    _loadSchedules();
     _loadReports();
     _startReportTimer();
   }
@@ -53,17 +50,6 @@ class _TankFullScreenState extends State<TankFullScreen> with TickerProviderStat
     _reportTimer = Timer.periodic(const Duration(hours: 1), (_) => _addReport());
   }
 
-  Future<void> _loadSchedules() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString('schedules_${widget.deviceId}');
-    if (data != null) setState(() => _schedules = List<Map<String, dynamic>>.from(jsonDecode(data)));
-  }
-
-  Future<void> _saveSchedules() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('schedules_${widget.deviceId}', jsonEncode(_schedules));
-  }
-
   Future<void> _loadReports() async {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString('reports_${widget.deviceId}');
@@ -77,13 +63,13 @@ class _TankFullScreenState extends State<TankFullScreen> with TickerProviderStat
 
   void _addReport() {
     final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
-    final tank = deviceProvider.devices.firstWhere((d) => d['device_id'].toString() == widget.deviceId, orElse: () => {});
-    if (tank.isEmpty) return;
+    final sump = deviceProvider.devices.firstWhere((d) => d['device_id'].toString() == widget.deviceId, orElse: () => {});
+    if (sump.isEmpty) return;
 
     final report = {
       'date': DateFormat('yyyy-MM-dd').format(DateTime.now()),
       'timestamp': DateFormat('HH:mm:ss').format(DateTime.now()),
-      'water_level': tank['status'].toString(),
+      'water_level': sump['status'].toString(),
     };
 
     setState(() {
@@ -96,17 +82,17 @@ class _TankFullScreenState extends State<TankFullScreen> with TickerProviderStat
   @override
   Widget build(BuildContext context) {
     final deviceProvider = Provider.of<DeviceProvider>(context);
-    final tank = deviceProvider.devices.firstWhere((d) => d['device_id'].toString() == widget.deviceId, orElse: () => {});
+    final sump = deviceProvider.devices.firstWhere((d) => d['device_id'].toString() == widget.deviceId, orElse: () => {});
 
-    if (tank.isEmpty) {
-      return Scaffold(appBar: AppBar(title: const Text("Tank Details")), body: const Center(child: Text("Tank not found")));
+    if (sump.isEmpty) {
+      return Scaffold(appBar: AppBar(title: const Text("Sump Details")), body: const Center(child: Text("Sump not found")));
     }
 
-    final currentLevel = int.tryParse(tank['status'].toString()) ?? 0;
-    final minThreshold = int.tryParse(tank["min_threshold"]?.toString() ?? "0") ?? 0;
-    final maxThreshold = int.tryParse(tank["max_threshold"]?.toString() ?? "100") ?? 100;
+    final currentLevel = int.tryParse(sump['status'].toString()) ?? 0;
+    final minThreshold = int.tryParse(sump["min_threshold"]?.toString() ?? "0") ?? 0;
+    final maxThreshold = int.tryParse(sump["max_threshold"]?.toString() ?? "100") ?? 100;
 
-    Color statusColor = Colors.blue;
+    Color statusColor = Colors.teal;
     String statusText = "Normal";
     if (currentLevel <= minThreshold) {
       statusColor = Colors.red;
@@ -123,16 +109,15 @@ class _TankFullScreenState extends State<TankFullScreen> with TickerProviderStat
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: Text(tank['device_name'] ?? "Tank"),
+        title: Text(sump['device_name'] ?? "Sump"),
         backgroundColor: statusColor,
         elevation: 0,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _buildWaterLevelCard(tank, currentLevel, minThreshold, maxThreshold, statusColor, statusText),
-            _buildConnectedDevicesCard(connectedDevices, deviceProvider),
-            _buildScheduleCard(tank),
+            _buildWaterLevelCard(sump, currentLevel, minThreshold, maxThreshold, statusColor, statusText),
+            _buildConnectedDevicesCard(connectedDevices),
             _buildReportsCard(),
           ],
         ),
@@ -140,7 +125,7 @@ class _TankFullScreenState extends State<TankFullScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildWaterLevelCard(Map tank, int level, int min, int max, Color color, String status) {
+  Widget _buildWaterLevelCard(Map sump, int level, int min, int max, Color color, String status) {
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -180,11 +165,11 @@ class _TankFullScreenState extends State<TankFullScreen> with TickerProviderStat
             child: Stack(
               alignment: Alignment.center,
               children: [
-                CustomPaint(painter: WaterTankPainter(level: level / 100, color: color, animation: _waveController), size: const Size(200, 250)),
+                CustomPaint(painter: WaterSumpPainter(level: level / 100, color: color, animation: _waveController), size: const Size(200, 250)),
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.water_drop, size: 60, color: Colors.white.withOpacity(0.9)),
+                    Icon(Icons.layers, size: 60, color: Colors.white.withOpacity(0.9)),
                     const SizedBox(height: 8),
                     Text("$level%", style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
                   ],
@@ -202,7 +187,7 @@ class _TankFullScreenState extends State<TankFullScreen> with TickerProviderStat
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => _showThresholdDialog(tank),
+                    onPressed: () => _showThresholdDialog(sump),
                     icon: const Icon(Icons.tune, size: 18),
                     label: const Text("Set"),
                     style: ElevatedButton.styleFrom(backgroundColor: color, padding: const EdgeInsets.symmetric(vertical: 12)),
@@ -230,7 +215,7 @@ class _TankFullScreenState extends State<TankFullScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildConnectedDevicesCard(List devices, DeviceProvider provider) {
+  Widget _buildConnectedDevicesCard(List devices) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
@@ -262,57 +247,6 @@ class _TankFullScreenState extends State<TankFullScreen> with TickerProviderStat
                       title: Text(device['device_name'] ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.w600)),
                       subtitle: Text("${device['device_type']?.toString().toUpperCase()} • ${device['status']}"),
                       trailing: Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(12)), child: const Text("Active", style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
-                    );
-                  },
-                ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScheduleCard(Map tank) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.purple.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.schedule, color: Colors.purple)),
-                    const SizedBox(width: 12),
-                    const Text("Schedule Manager", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-                IconButton(onPressed: () => _showAddScheduleDialog(tank), icon: const Icon(Icons.add_circle, color: Colors.purple, size: 28)),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          _schedules.isEmpty
-              ? const Padding(padding: EdgeInsets.all(32), child: Center(child: Text("No schedules", style: TextStyle(color: Colors.grey))))
-              : ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _schedules.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1, indent: 16),
-                  itemBuilder: (_, i) {
-                    final s = _schedules[i];
-                    return ListTile(
-                      leading: CircleAvatar(backgroundColor: Colors.purple.withOpacity(0.1), child: Text("${i + 1}", style: const TextStyle(color: Colors.purple, fontWeight: FontWeight.bold))),
-                      title: Text(s['name'] ?? 'Schedule ${i + 1}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text("${s['device_name']} • ${s['start_time']} - ${s['end_time']}"),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(onPressed: () => _showEditScheduleDialog(i), icon: const Icon(Icons.edit, color: Colors.blue, size: 20)),
-                          IconButton(onPressed: () => _deleteSchedule(i), icon: const Icon(Icons.delete, color: Colors.red, size: 20)),
-                        ],
-                      ),
                     );
                   },
                 ),
@@ -365,91 +299,10 @@ class _TankFullScreenState extends State<TankFullScreen> with TickerProviderStat
     );
   }
 
-  void _showAddScheduleDialog(Map tank) {
-    final nameCtrl = TextEditingController();
-    final deviceNameCtrl = TextEditingController(text: tank['device_name'] ?? '');
-    final startCtrl = TextEditingController();
-    final endCtrl = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Add Schedule"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "Schedule Name", border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            TextField(controller: deviceNameCtrl, decoration: const InputDecoration(labelText: "Device Name", border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            TextField(controller: startCtrl, decoration: const InputDecoration(labelText: "Start Time (HH:MM)", border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            TextField(controller: endCtrl, decoration: const InputDecoration(labelText: "End Time (HH:MM)", border: OutlineInputBorder())),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-          ElevatedButton(
-            onPressed: () {
-              if (nameCtrl.text.isEmpty || deviceNameCtrl.text.isEmpty || startCtrl.text.isEmpty || endCtrl.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Fill all fields")));
-                return;
-              }
-              setState(() => _schedules.add({'name': nameCtrl.text, 'device_name': deviceNameCtrl.text, 'start_time': startCtrl.text, 'end_time': endCtrl.text}));
-              _saveSchedules();
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Schedule added"), backgroundColor: Colors.green));
-            },
-            child: const Text("Add"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showEditScheduleDialog(int index) {
-    final s = _schedules[index];
-    final nameCtrl = TextEditingController(text: s['name']);
-    final deviceNameCtrl = TextEditingController(text: s['device_name']);
-    final startCtrl = TextEditingController(text: s['start_time']);
-    final endCtrl = TextEditingController(text: s['end_time']);
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Edit Schedule"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "Schedule Name", border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            TextField(controller: deviceNameCtrl, decoration: const InputDecoration(labelText: "Device Name", border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            TextField(controller: startCtrl, decoration: const InputDecoration(labelText: "Start Time", border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            TextField(controller: endCtrl, decoration: const InputDecoration(labelText: "End Time", border: OutlineInputBorder())),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-          ElevatedButton(
-            onPressed: () {
-              setState(() => _schedules[index] = {'name': nameCtrl.text, 'device_name': deviceNameCtrl.text, 'start_time': startCtrl.text, 'end_time': endCtrl.text});
-              _saveSchedules();
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Schedule updated"), backgroundColor: Colors.green));
-            },
-            child: const Text("Save"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showThresholdDialog(Map tank) {
+  void _showThresholdDialog(Map sump) {
     final orgProvider = Provider.of<OrgProvider>(context, listen: false);
-    final minCtrl = TextEditingController(text: tank['min_threshold']?.toString() ?? '0');
-    final maxCtrl = TextEditingController(text: tank['max_threshold']?.toString() ?? '100');
+    final minCtrl = TextEditingController(text: sump['min_threshold']?.toString() ?? '0');
+    final maxCtrl = TextEditingController(text: sump['max_threshold']?.toString() ?? '100');
 
     showDialog(
       context: context,
@@ -498,9 +351,9 @@ class _TankFullScreenState extends State<TankFullScreen> with TickerProviderStat
                     body: jsonEncode({
                       'org_id': orgProvider.selectedOrgId,
                       'device_id': widget.deviceId,
-                      'device_name': tank['device_name'],
-                      'block_id': tank['block_id'],
-                      'parent_device_id': tank['parent_id'],
+                      'device_name': sump['device_name'],
+                      'block_id': sump['block_id'],
+                      'parent_device_id': sump['parent_id'],
                       'min_threshold': int.parse(minCtrl.text),
                       'max_threshold': int.parse(maxCtrl.text),
                     }),
@@ -530,41 +383,18 @@ class _TankFullScreenState extends State<TankFullScreen> with TickerProviderStat
     );
   }
 
-  void _deleteSchedule(int index) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Delete Schedule"),
-        content: const Text("Are you sure?"),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () {
-              setState(() => _schedules.removeAt(index));
-              _saveSchedules();
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Schedule deleted")));
-            },
-            child: const Text("Delete"),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _downloadPDF() async {
     final pdf = pw.Document();
     final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
-    final tank = deviceProvider.devices.firstWhere((d) => d['device_id'].toString() == widget.deviceId, orElse: () => {});
+    final sump = deviceProvider.devices.firstWhere((d) => d['device_id'].toString() == widget.deviceId, orElse: () => {});
 
     pdf.addPage(pw.Page(build: (pw.Context context) {
       return pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text("Tank Water Level Report", style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+          pw.Text("Sump Water Level Report", style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 20),
-          pw.Text("Tank: ${tank['device_name']}", style: const pw.TextStyle(fontSize: 16)),
+          pw.Text("Sump: ${sump['device_name']}", style: const pw.TextStyle(fontSize: 16)),
           pw.Text("Generated: ${DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now())}", style: const pw.TextStyle(fontSize: 12)),
           pw.SizedBox(height: 20),
           pw.Table.fromTextArray(
@@ -594,12 +424,12 @@ class _TankFullScreenState extends State<TankFullScreen> with TickerProviderStat
   }
 }
 
-class WaterTankPainter extends CustomPainter {
+class WaterSumpPainter extends CustomPainter {
   final double level;
   final Color color;
   final Animation<double> animation;
 
-  WaterTankPainter({required this.level, required this.color, required this.animation}) : super(repaint: animation);
+  WaterSumpPainter({required this.level, required this.color, required this.animation}) : super(repaint: animation);
 
   @override
   void paint(Canvas canvas, Size size) {
