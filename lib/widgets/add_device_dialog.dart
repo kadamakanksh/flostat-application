@@ -393,7 +393,7 @@ class _AddDeviceDialogState extends State<AddDeviceDialog> {
             // ---------- CREATE MODE: only device type ----------
             if (!isUpdating) ...[
               DropdownButtonFormField<String>(
-                value: selectedType,
+                initialValue: selectedType,
                 decoration: const InputDecoration(labelText: "Device Type"),
                 items: ["pump", "tank", "sump", "valve"]
                     .map((e) => DropdownMenuItem(value: e, child: Text(e.toUpperCase())))
@@ -414,7 +414,7 @@ class _AddDeviceDialogState extends State<AddDeviceDialog> {
             if (isUpdating) ...[
               // Device Type (disabled)
               DropdownButtonFormField<String>(
-                value: selectedType,
+                initialValue: selectedType,
                 decoration: const InputDecoration(labelText: "Device Type (locked)"),
                 items: ["pump", "tank", "sump", "valve"]
                     .map((e) => DropdownMenuItem(value: e, child: Text(e.toUpperCase())))
@@ -439,7 +439,7 @@ class _AddDeviceDialogState extends State<AddDeviceDialog> {
                       ],
                     )
                   : DropdownButtonFormField<String>(
-                      value: selectedBlock,
+                      initialValue: selectedBlock,
                       decoration: const InputDecoration(labelText: "Select Block"),
                       items: provider.blocks
                           .map((b) => DropdownMenuItem(
@@ -467,7 +467,7 @@ class _AddDeviceDialogState extends State<AddDeviceDialog> {
                 parentOptions.isEmpty
                     ? const Text("No valid parent devices available for this type.", style: TextStyle(fontSize: 13))
                     : DropdownButtonFormField<String>(
-                        value: selectedParent,
+                        initialValue: selectedParent,
                         decoration: const InputDecoration(labelText: "Parent Device (optional)"),
                         items: parentOptions
                             .map((d) => DropdownMenuItem(
@@ -498,7 +498,7 @@ class _AddDeviceDialogState extends State<AddDeviceDialog> {
                               );
                               return;
                             }
-                            await _handleCreate(provider, orgId!);
+                            await _handleCreate(provider, orgId);
                           } else {
                             // Update flow: validation
                             if (nameController.text.trim().isEmpty) {
@@ -513,7 +513,7 @@ class _AddDeviceDialogState extends State<AddDeviceDialog> {
                               );
                               return;
                             }
-                            await _handleUpdate(provider, orgId!);
+                            await _handleUpdate(provider, orgId);
                           }
                         },
                   child: _loading

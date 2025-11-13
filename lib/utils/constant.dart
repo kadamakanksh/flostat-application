@@ -43,6 +43,30 @@ class ValveStatus {
   static const String CLOSE = "CLOSE";
 }
 
+class TankStatus {
+  static const String NORMAL = "NORMAL";
+  static const String FILLING = "FILLING";
+  static const String LOW = "LOW";
+  static const String HIGH = "HIGH";
+  static const String CRITICAL = "CRITICAL";
+}
+
+class SumpStatus {
+  static const String NORMAL = "NORMAL";
+  static const String FILLING = "FILLING";
+  static const String LOW = "LOW";
+  static const String HIGH = "HIGH";
+  static const String CRITICAL = "CRITICAL";
+}
+
+// Default device status map
+const Map<String, String> DEFAULT_DEVICE_STATUS = {
+  'pump': 'OFF',
+  'valve': 'CLOSE',
+  'tank': 'NORMAL',
+  'sump': 'NORMAL',
+};
+
 // ---------------- WebSocket / AWS Config -----------------
 const String AWS_REGION = String.fromEnvironment('REACT_APP_AWS_REGION');
 const String IDENTITY_POOL = String.fromEnvironment('REACT_APP_COGNITO_IDENTITY_POOL_ID');

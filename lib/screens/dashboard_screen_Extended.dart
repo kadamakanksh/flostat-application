@@ -1,4 +1,3 @@
-import 'package:flostat_application/screens/TANK/tank_full_screen.dart';
 import 'package:flostat_application/screens/TANK/tank_list_screen.dart';
 import 'package:flostat_application/screens/VALVE/valve_list_screen.dart';
 import 'package:flostat_application/screens/PUMP/pump_list_screen.dart';

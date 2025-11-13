@@ -55,7 +55,7 @@ class _DeviceManagementScreenState extends State<DeviceManagementScreen> {
                   child: blocks.isEmpty
                       ? const Text("No blocks found. Please create a block.")
                       : DropdownButtonFormField<String>(
-                          value: selectedBlock == "" ? null : selectedBlock,
+                          initialValue: selectedBlock == "" ? null : selectedBlock,
                           decoration:
                               const InputDecoration(labelText: "Selected Block"),
                           isExpanded: true,
@@ -436,7 +436,7 @@ class _DeviceManagementScreenState extends State<DeviceManagementScreen> {
                                 : DropdownButtonFormField<String>(
                                     decoration:
                                         const InputDecoration(labelText: "Select Block"),
-                                    value: selectedBlock,
+                                    initialValue: selectedBlock,
                                     items: provider.blocks
                                         .map((b) => DropdownMenuItem(
                                               value: b['block_id'].toString(),
@@ -464,7 +464,7 @@ class _DeviceManagementScreenState extends State<DeviceManagementScreen> {
                               DropdownButtonFormField<String>(
                                 decoration:
                                     const InputDecoration(labelText: "Parent Device (optional)"),
-                                value: selectedParent,
+                                initialValue: selectedParent,
                                 items: parentOptions
                                     .where((d) => d['device_id'].toString() != device['device_id'].toString())
                                     .map((d) => DropdownMenuItem(

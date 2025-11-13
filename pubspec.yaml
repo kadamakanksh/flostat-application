@@ -16,13 +16,13 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   # HTTP & Network
-  http: ^1.5.0
+  http: ^1.6.0
   dio: ^5.1.2
 
   # Firebase
-  firebase_core: ^4.2.0
-  firebase_auth: ^6.1.1
-  firebase_messaging: ^16.0.3
+  firebase_core: ^4.2.1
+  firebase_auth: ^6.1.2
+  firebase_messaging: ^16.0.4
 
   # Environment Variables
   flutter_dotenv: ^6.0.0
@@ -31,7 +31,7 @@ dependencies:
   mqtt_client: ^10.1.0
 
   # Notifications
-  flutter_local_notifications: ^17.1.1
+  flutter_local_notifications: ^19.5.0
   flutter_secure_storage: ^9.2.4
 
   # AWS Amplify
@@ -40,17 +40,17 @@ dependencies:
 
   # Charts & Reports
   fl_chart: 1.1.1
-  syncfusion_flutter_pdf: ^31.2.2
+  syncfusion_flutter_pdf: ^31.2.10
   printing: ^5.9.0
   path_provider: ^2.1.5
   provider: ^6.0.5
 
   # File/Image Picker
-  image_picker: ^1.2.0
-  file_picker: ^10.3.3
+  image_picker: ^1.2.1
+  file_picker: ^10.3.6
 
   # Utilities
-  uuid: ^4.2.0
+  uuid: ^4.5.2
   shimmer: ^3.0.0
   animated_text_kit: ^4.2.3
   intl: ^0.20.2

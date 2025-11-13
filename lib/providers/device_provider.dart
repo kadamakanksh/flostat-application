@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../config/api_endpoints.dart';
-import '../utils/constant.dart';
 import 'auth_provider.dart';
 
 class DeviceProvider with ChangeNotifier {
@@ -58,6 +57,9 @@ class DeviceProvider with ChangeNotifier {
             device['block_id'] = blockId?.toString();
           }
         }
+
+        // Normalize pending status to proper defaults
+        _normalizeDeviceStatus();
 
         debugPrint("=== FETCH DEVICES ===");
         debugPrint("Total: ${_devices.length}");
@@ -268,13 +270,47 @@ class DeviceProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // -------------------- NORMALIZE DEVICE STATUS --------------------
+  Map<String, String> _localStatusCache = {};
+  
+  void _normalizeDeviceStatus() {
+    for (var device in _devices) {
+      final deviceId = device['device_id']?.toString();
+      final status = device['status']?.toString().toLowerCase();
+      
+      // Check if we have a cached local status for this device
+      if (deviceId != null && _localStatusCache.containsKey(deviceId)) {
+        device['status'] = _localStatusCache[deviceId];
+        continue;
+      }
+      
+      if (status == null || status == 'pending' || status.isEmpty) {
+        final deviceType = device['device_type']?.toString().toLowerCase() ?? '';
+        device['status'] = {
+          'pump': 'OFF',
+          'valve': 'CLOSE',
+          'tank': 'NORMAL',
+          'sump': 'NORMAL',
+        }[deviceType] ?? 'NORMAL';
+        
+        if (deviceType == 'tank' || deviceType == 'sump') {
+          device['current_level'] = device['current_level'] ?? 0;
+        }
+      }
+    }
+  }
+
   // ==========================================================
   // -------------------- TOGGLE PUMP -------------------------
   // ==========================================================
   Future<bool> togglePump(String deviceId, bool turnOn) async {
     if (authProvider.token == null) return false;
     final newStatus = turnOn ? 'ON' : 'OFF';
-    return await updateDeviceStatusOnServer(deviceId, 'pump', newStatus);
+    final success = await updateDeviceStatusOnServer(deviceId, 'pump', newStatus);
+    if (success) {
+      _localStatusCache[deviceId] = newStatus;
+    }
+    return success;
   }
 
   // ==========================================================
@@ -282,8 +318,75 @@ class DeviceProvider with ChangeNotifier {
   // ==========================================================
   Future<bool> toggleValve(String deviceId, String currentStatus) async {
     if (authProvider.token == null) return false;
-    final newStatus = currentStatus.toUpperCase() == 'OPEN' ? 'CLOSE' : 'OPEN';
-    return await updateDeviceStatusOnServer(deviceId, 'valve', newStatus);
+    
+    // Normalize current status and determine new status
+    final normalizedCurrentStatus = currentStatus.trim().toUpperCase();
+    final newStatus = normalizedCurrentStatus == 'OPEN' ? 'CLOSE' : 'OPEN';
+    
+    debugPrint("🔄 Toggling valve $deviceId: $normalizedCurrentStatus → $newStatus");
+    
+    final success = await updateDeviceStatusOnServer(deviceId, 'valve', newStatus);
+    
+    if (success) {
+      // Cache the new status locally
+      _localStatusCache[deviceId] = newStatus;
+      
+      // Update connected devices status
+      _updateConnectedDevicesStatus(deviceId, newStatus);
+      
+      debugPrint("✅ Valve $deviceId toggled successfully to $newStatus");
+    } else {
+      debugPrint("❌ Failed to toggle valve $deviceId");
+    }
+    
+    return success;
+  }
+  
+  // Update connected devices when valve status changes
+  void _updateConnectedDevicesStatus(String valveId, String valveStatus) {
+    debugPrint("🔗 Updating connected devices for valve: $valveId, status: $valveStatus");
+    
+    // Find connected devices (children of this valve)
+    final connectedDevices = _devices.where((d) => d['parent_id']?.toString() == valveId).toList();
+    
+    debugPrint("🔗 Found ${connectedDevices.length} connected devices");
+    
+    for (var device in connectedDevices) {
+      final deviceId = device['device_id']?.toString();
+      final deviceType = device['device_type']?.toString().toLowerCase();
+      final deviceName = device['device_name'] ?? 'Unknown';
+      
+      debugPrint("🔗 Processing: $deviceName (type: $deviceType, id: $deviceId)");
+      
+      if (deviceId != null) {
+        if (valveStatus == 'OPEN') {
+          // Valve opened - turn connected devices ON
+          if (deviceType == 'pump') {
+            _localStatusCache[deviceId] = 'ON';
+            device['status'] = 'ON';
+            debugPrint("✅ Auto-turned ON: $deviceName (pump)");
+          } else if (deviceType == 'tank' || deviceType == 'sump') {
+            _localStatusCache[deviceId] = 'FILLING';
+            device['status'] = 'FILLING';
+            debugPrint("✅ Auto-status: $deviceName (FILLING)");
+          }
+        } else {
+          // Valve closed - turn connected devices OFF
+          if (deviceType == 'pump') {
+            _localStatusCache[deviceId] = 'OFF';
+            device['status'] = 'OFF';
+            debugPrint("✅ Auto-turned OFF: $deviceName (pump)");
+          } else if (deviceType == 'tank' || deviceType == 'sump') {
+            _localStatusCache[deviceId] = 'NORMAL';
+            device['status'] = 'NORMAL';
+            debugPrint("✅ Auto-status: $deviceName (NORMAL)");
+          }
+        }
+      }
+    }
+    
+    debugPrint("🔗 Status cache after update: $_localStatusCache");
+    notifyListeners();
   }
 
   // ==========================================================

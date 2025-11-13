@@ -5,7 +5,7 @@ class PumpTile extends StatelessWidget {
   final bool isOn;
   final VoidCallback onToggle;
   final VoidCallback onSchedule;
-  const PumpTile({required this.name, required this.isOn, required this.onToggle, required this.onSchedule, Key? key}) : super(key: key);
+  const PumpTile({required this.name, required this.isOn, required this.onToggle, required this.onSchedule, super.key});
 
   @override
   Widget build(BuildContext context) {
