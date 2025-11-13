@@ -44,3 +44,12 @@ class DeviceEndpoints {
   static const String getBlockMode = "$BASE_URL/device/block/getBlockMode";
   static const String changeBlockMode = "$BASE_URL/device/block/changeMode";
 }
+
+class SupportEndpoints {
+  static const String createQuery = "$BASE_URL/user/createQuery";
+  static const String updateQuery = "$BASE_URL/user/updateQuery";
+  static const String deleteQuery = "$BASE_URL/user/deleteQuery";
+  static const String getQuery = "$BASE_URL/user/getQuery";
+  static const String getAllOrgQuery = "$BASE_URL/user/getAllOrgQuery";
+  static const String customerSupportChat = "$BASE_URL/user/customerSupportChat";
+}

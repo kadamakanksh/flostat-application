@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/org_provider.dart';
 import 'providers/device_provider.dart';
-import 'providers/user_provider.dart'; // ✅ add this
+import 'providers/user_provider.dart';
+import 'providers/support_ticket_provider.dart';
 import 'screens/splash_screen.dart';
 
 void main() {
@@ -20,15 +21,18 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => OrgProvider()),
 
-        /// ✅ Inject AuthProvider into DeviceProvider properly
         ChangeNotifierProxyProvider<AuthProvider, DeviceProvider>(
           create: (_) => DeviceProvider(authProvider: AuthProvider()),
           update: (_, auth, previous) =>
               previous!..updateAuthProvider(auth),
         ),
 
-        /// ✅ Add this line for User Management
         ChangeNotifierProvider(create: (_) => UserProvider()),
+
+        ChangeNotifierProxyProvider<AuthProvider, SupportTicketProvider>(
+          create: (context) => SupportTicketProvider(authProvider: context.read<AuthProvider>()),
+          update: (_, auth, previous) => previous ?? SupportTicketProvider(authProvider: auth),
+        ),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

@@ -6,6 +6,7 @@ import '../screens/dashboard_screen_Extended.dart';
 import '../screens/login_screen.dart';
 import '../screens/device_management_screen.dart';
 import '../screens/user_management_screen.dart';
+import '../screens/SUPPORT/customer_support_screen.dart';
 
 class CustomDrawer extends StatelessWidget {
   const CustomDrawer({super.key});
@@ -72,7 +73,7 @@ class CustomDrawer extends StatelessWidget {
             },
           ),
 
-          // ✅ User Management (fixed)
+          // User Management
           ListTile(
             leading: const Icon(Icons.group),
             title: const Text("User Management"),
@@ -88,6 +89,24 @@ class CustomDrawer extends StatelessWidget {
                 MaterialPageRoute(
                   builder: (_) => UserManagementScreen(orgId: orgId),
                 ),
+              );
+            },
+          ),
+
+          // Customer Support
+          ListTile(
+            leading: const Icon(Icons.support_agent),
+            title: const Text("Customer Support"),
+            onTap: () {
+              if (orgId == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Please select an organization first")),
+                );
+                return;
+              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CustomerSupportScreen()),
               );
             },
           ),
