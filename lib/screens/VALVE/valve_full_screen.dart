@@ -36,6 +36,19 @@ class _ValveFullScreenState extends State<ValveFullScreen>
 
     _loadReports();
     _startReportTimer();
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshDevices();
+    });
+  }
+
+  Future<void> _refreshDevices() async {
+    final orgProvider = Provider.of<OrgProvider>(context, listen: false);
+    final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
+    if (orgProvider.selectedOrgId != null) {
+      await deviceProvider.fetchDevices(orgProvider.selectedOrgId!);
+      debugPrint("✅ Devices refreshed on valve screen load");
+    }
   }
 
   @override
@@ -122,7 +135,39 @@ class _ValveFullScreenState extends State<ValveFullScreen>
     }
 
     final currentStatus = valve['status']?.toString().toUpperCase() ?? ValveStatus.CLOSE;
+    final newStatus = currentStatus == 'OPEN' ? 'CLOSE' : 'OPEN';
+    
+    debugPrint("🔴 ========== VALVE TOGGLE START ==========");
+    debugPrint("🔴 Valve ID: ${widget.deviceId}");
+    debugPrint("🔴 Valve Name: ${valve['device_name']}");
+    debugPrint("🔴 Current Status: $currentStatus");
+    debugPrint("🔴 New Status: $newStatus");
+    debugPrint("🔴 Org ID: ${orgProvider.selectedOrgId}");
+    
     final success = await deviceProvider.toggleValve(widget.deviceId, currentStatus);
+    
+    debugPrint("🔴 Toggle Result: ${success ? 'SUCCESS' : 'FAILED'}");
+
+    if (success) {
+      // Update local state immediately since backend returns pending
+      final index = deviceProvider.devices.indexWhere((d) => d['device_id'].toString() == widget.deviceId);
+      if (index != -1) {
+        deviceProvider.devices[index]['status'] = newStatus;
+        debugPrint("✅ Local valve status updated to: $newStatus");
+      }
+      
+      _addReport();
+      
+      // Force UI rebuild to show updated connected devices
+      setState(() {});
+      
+      // Refresh in background
+      Future.delayed(const Duration(milliseconds: 500), () {
+        deviceProvider.fetchDevices(orgProvider.selectedOrgId!);
+      });
+    }
+    
+    debugPrint("🔴 ========== VALVE TOGGLE END ==========");
 
     setState(() => _isToggling = false);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -168,6 +213,12 @@ class _ValveFullScreenState extends State<ValveFullScreen>
     List<Map<String, dynamic>> connectedDevices = [];
     if (connectedTank.isNotEmpty) connectedDevices.add(connectedTank);
     connectedDevices.addAll(connectedChildren);
+    
+    // Debug: Print connected devices data
+    debugPrint("🔗 Connected devices for valve ${widget.deviceId}:");
+    for (var device in connectedDevices) {
+      debugPrint("  - ${device['device_name']} (${device['device_type']}): status=${device['status']}, level=${device['current_level']}");
+    }
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -268,11 +319,53 @@ class _ValveFullScreenState extends State<ValveFullScreen>
                   separatorBuilder: (_, __) => const Divider(height: 1, indent: 16),
                   itemBuilder: (_, i) {
                     final device = devices[i];
-                    final status = device['status']?.toString().toUpperCase() ?? ValveStatus.CLOSE;
+                    final deviceType = device['device_type']?.toString().toLowerCase() ?? 'unknown';
+                    final rawStatus = device['status']?.toString().toUpperCase() ?? '';
+                    
+                    debugPrint("Device: ${device['device_name']}, Type: $deviceType, Raw Status: $rawStatus");
+                    
+                    String status;
+                    Color statusColor;
+                    
+                    // Handle PENDING status - backend hasn't initialized device status
+                    if (rawStatus == 'PENDING') {
+                      status = 'NOT INITIALIZED';
+                      statusColor = Colors.orange;
+                    } else {
+                      switch (deviceType) {
+                        case 'pump':
+                          status = rawStatus.isEmpty ? PumpStatus.OFF : rawStatus;
+                          statusColor = status == PumpStatus.ON ? Colors.green : Colors.grey;
+                          break;
+                        case 'valve':
+                          status = rawStatus.isEmpty ? ValveStatus.CLOSE : rawStatus;
+                          statusColor = status == ValveStatus.OPEN ? Colors.green : Colors.grey;
+                          break;
+                        case 'tank':
+                          final level = device['current_level']?.toString() ?? 'N/A';
+                          status = rawStatus.isEmpty ? 'NORMAL' : rawStatus;
+                          if (level != 'N/A') status = '$status ($level%)';
+                          statusColor = rawStatus == 'FILLING' ? Colors.green : Colors.blue;
+                          break;
+                        case 'sump':
+                          final level = device['current_level']?.toString() ?? 'N/A';
+                          status = rawStatus.isEmpty ? 'NORMAL' : rawStatus;
+                          if (level != 'N/A') status = '$status ($level%)';
+                          statusColor = rawStatus == 'FILLING' ? Colors.green : Colors.orange;
+                          break;
+                        default:
+                          status = rawStatus.isEmpty ? 'UNKNOWN' : rawStatus;
+                          statusColor = Colors.grey;
+                      }
+                    }
+                    
                     return ListTile(
-                      leading: CircleAvatar(backgroundColor: Colors.blue.withOpacity(0.1), child: Icon(_getDeviceIcon(device['device_type']), color: Colors.blue)),
+                      leading: CircleAvatar(
+                        backgroundColor: statusColor.withOpacity(0.1), 
+                        child: Icon(_getDeviceIcon(device['device_type']), color: statusColor)
+                      ),
                       title: Text(device['device_name'] ?? 'Unknown'),
-                      subtitle: Text("${device['device_type']} • $status"),
+                      subtitle: Text("${deviceType.toUpperCase()} • $status"),
                     );
                   },
                 ),

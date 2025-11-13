@@ -40,7 +40,7 @@ class _EditUserDialogState extends State<EditUserDialog> {
         style: TextStyle(fontWeight: FontWeight.bold),
       ),
       content: DropdownButtonFormField<String>(
-        value: _selectedRole,
+        initialValue: _selectedRole,
         decoration: const InputDecoration(
           labelText: "Select New Role",
           border: OutlineInputBorder(),

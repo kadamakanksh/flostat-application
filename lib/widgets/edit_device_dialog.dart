@@ -186,7 +186,7 @@ class _EditDeviceDialogState extends State<EditDeviceDialog> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             DropdownButtonFormField<String>(
-                              value: _selectedBlock,
+                              initialValue: _selectedBlock,
                               decoration: const InputDecoration(
                                   labelText: "Select Block"),
                               items: _blocks.map<DropdownMenuItem<String>>((b) {
@@ -221,7 +221,7 @@ class _EditDeviceDialogState extends State<EditDeviceDialog> {
                     const Text("No parent devices available for this type."),
                   if (_availableParents.isNotEmpty)
                     DropdownButtonFormField<String>(
-                      value: _selectedParent,
+                      initialValue: _selectedParent,
                       decoration: const InputDecoration(
                           labelText: "Select Parent Device (optional)"),
                       items: _availableParents.map<DropdownMenuItem<String>>((p) {

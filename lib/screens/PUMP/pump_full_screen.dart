@@ -62,8 +62,8 @@ class _PumpFullScreenState extends State<PumpFullScreen> with SingleTickerProvid
     final pump = deviceProvider.devices.firstWhere((d) => d['device_id'].toString() == widget.deviceId, orElse: () => <String, dynamic>{});
     if (pump.isEmpty) return;
 
-    final status = pump['status']?.toString().toLowerCase() ?? 'off';
-    final bool isOn = status == 'on' || status == '1' || status == 'true';
+    final status = pump['status']?.toString().toUpperCase() ?? 'OFF';
+    final bool isOn = status == 'ON';
 
     final report = {
       'date': DateFormat('yyyy-MM-dd').format(DateTime.now()),
@@ -82,31 +82,27 @@ class _PumpFullScreenState extends State<PumpFullScreen> with SingleTickerProvid
     final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
     final orgProvider = Provider.of<OrgProvider>(context, listen: false);
 
-    try {
-      final response = await http.put(
-        Uri.parse(DeviceEndpoints.updateDeviceStatus),
-        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ${deviceProvider.authProvider.token}'},
-        body: jsonEncode({
-          'org_id': orgProvider.selectedOrgId,
-          'device_id': widget.deviceId,
-          'device_name': pump['device_name'],
-          'block_id': pump['block_id'],
-          'parent_device_id': pump['parent_id'],
-          'status': currentState ? 'off' : 'on',
-        }),
+    if (orgProvider.selectedOrgId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Organization not selected")),
       );
+      return;
+    }
 
-      if (response.statusCode == 200) {
-        await deviceProvider.fetchDevices(orgProvider.selectedOrgId!);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Pump turned ${currentState ? 'OFF' : 'ON'}"), backgroundColor: Colors.green),
-          );
-        }
-      }
-    } catch (e) {
+    final success = await deviceProvider.togglePump(widget.deviceId, !currentState);
+    
+    if (success) {
+      _addReport();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Pump turned ${currentState ? 'OFF' : 'ON'}"), backgroundColor: Colors.green),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to toggle pump"), backgroundColor: Colors.red),
+        );
       }
     }
   }
@@ -120,8 +116,8 @@ class _PumpFullScreenState extends State<PumpFullScreen> with SingleTickerProvid
       return Scaffold(appBar: AppBar(title: const Text("Pump Details")), body: const Center(child: Text("Pump not found")));
     }
 
-    final status = pump['status']?.toString().toLowerCase() ?? 'off';
-    final bool isOn = status == 'on' || status == '1' || status == 'true';
+    final status = pump['status']?.toString().toUpperCase() ?? 'OFF';
+    final bool isOn = status == 'ON';
     final Color statusColor = isOn ? Colors.blue : Colors.grey;
 
     // Find connected sump (child - sump has pump as parent_id)

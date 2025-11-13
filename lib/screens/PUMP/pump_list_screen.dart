@@ -35,8 +35,8 @@ class PumpListScreen extends StatelessWidget {
               itemBuilder: (context, index) {
                 final pump = updatedPumps[index];
                 final String pumpName = pump['device_name'] ?? "Pump";
-                final String status = pump['status']?.toString().toLowerCase() ?? 'off';
-                final bool isOn = status == 'on' || status == '1' || status == 'true';
+                final String status = pump['status']?.toString().toUpperCase() ?? 'OFF';
+                final bool isOn = status == 'ON';
 
                 return Card(
                   margin: const EdgeInsets.symmetric(vertical: 8),

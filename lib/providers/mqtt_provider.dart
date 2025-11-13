@@ -14,7 +14,7 @@ class MqttProvider with ChangeNotifier {
   bool _isConnected = false;
   bool get isConnected => _isConnected;
 
-  List<LogModel> _logs = [];
+  final List<LogModel> _logs = [];
   List<LogModel> get logs => _logs;
 
   // ===== MQTT CONFIG =====
