@@ -1,5 +1,7 @@
 import 'package:flostat_application/screens/TANK/tank_full_screen.dart';
 import 'package:flostat_application/screens/TANK/tank_list_screen.dart';
+import 'package:flostat_application/screens/VALVE/valve_list_screen.dart';
+import 'package:flostat_application/screens/PUMP/pump_list_screen.dart';
 import 'package:flostat_application/screens/SUMP/sump_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -105,8 +107,32 @@ class _DashboardScreenExtendedState extends State<DashboardScreenExtended>
         );
         break;
       case 1: // Valves
+        final valves = allDevices
+            .where((d) => d['device_type'] == 'valve')
+            .toList();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ValveListScreen(
+              valves: valves,
+              blockName: blockName,
+            ),
+          ),
+        );
         break;
       case 2: // Pumps
+        final pumps = allDevices
+            .where((d) => d['device_type'] == 'pump')
+            .toList();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PumpListScreen(
+              pumps: pumps,
+              blockName: blockName,
+            ),
+          ),
+        );
         break;
       case 3: // Sumps
         final sumps = allDevices

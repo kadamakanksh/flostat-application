@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../config/api_endpoints.dart';
+import '../utils/constant.dart';
 import 'auth_provider.dart';
 
 class DeviceProvider with ChangeNotifier {
@@ -28,63 +29,48 @@ class DeviceProvider with ChangeNotifier {
   // ==========================================================
   // -------------------- FETCH DEVICES -----------------------
   // ==========================================================
-  // ==========================================================
-// -------------------- FETCH DEVICES -----------------------
-// ==========================================================
-Future<void> fetchDevices(String orgId) async {
-  selectedOrgId = orgId;
-  _loading = true;
-  notifyListeners();
-
-  try {
-    final response = await http.post(
-      Uri.parse(DeviceEndpoints.getOrgAllDevice),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ${authProvider.token}'
-      },
-      body: jsonEncode({'org_id': orgId}),
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      _devices = List<Map<String, dynamic>>.from(data['devices'] ?? []);
-      
-      // ✅ FIX: API returns block_id as list [uuid] or [[uuid]] instead of string
-      // This causes filtering to fail because "uuid" != ["uuid"]
-      // Convert all block_id values from list to string
-      for (var device in _devices) {
-        var blockId = device['block_id'];
-        
-        // If block_id is a list, extract the string value
-        if (blockId is List && blockId.isNotEmpty) {
-          // Handle nested lists like [[uuid]] by unwrapping until we get the string
-          while (blockId is List && blockId.isNotEmpty) {
-            blockId = blockId[0];
-          }
-          // Update device with cleaned block_id
-          device['block_id'] = blockId?.toString();
-        }
-      }
-      
-      // Debug: Show all sumps and their block_id values
-      debugPrint("=== FETCH DEVICES ===");
-      debugPrint("Total: ${_devices.length}");
-      final sumps = _devices.where((d) => d['device_type'] == 'sump').toList();
-      debugPrint("Sumps: ${sumps.length}");
-      for (var s in sumps) {
-        debugPrint("  ${s['device_name']} - block_id: ${s['block_id']}");
-      }
-    } else {
-      debugPrint("❌ Failed to fetch devices: ${response.body}");
-    }
-  } catch (e) {
-    debugPrint("🚨 Error fetching devices: $e");
-  } finally {
-    _loading = false;
+  Future<void> fetchDevices(String orgId) async {
+    selectedOrgId = orgId;
+    _loading = true;
     notifyListeners();
+
+    try {
+      final response = await http.post(
+        Uri.parse(DeviceEndpoints.getOrgAllDevice),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${authProvider.token}'
+        },
+        body: jsonEncode({'org_id': orgId}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        _devices = List<Map<String, dynamic>>.from(data['devices'] ?? []);
+
+        // Flatten block_id if it's a nested list
+        for (var device in _devices) {
+          var blockId = device['block_id'];
+          if (blockId is List && blockId.isNotEmpty) {
+            while (blockId is List && blockId.isNotEmpty) {
+              blockId = blockId[0];
+            }
+            device['block_id'] = blockId?.toString();
+          }
+        }
+
+        debugPrint("=== FETCH DEVICES ===");
+        debugPrint("Total: ${_devices.length}");
+      } else {
+        debugPrint("❌ Failed to fetch devices: ${response.body}");
+      }
+    } catch (e) {
+      debugPrint("🚨 Error fetching devices: $e");
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
   }
-}
 
   // ==========================================================
   // -------------------- FETCH BLOCKS ------------------------
@@ -267,60 +253,37 @@ Future<void> fetchDevices(String orgId) async {
     }
   }
 
-
   // -------------------- UPDATE DEVICE FROM MQTT --------------------
-void updateDeviceFromMqtt(Map<String, dynamic> mqttData) {
-  final deviceId = mqttData['device_id'];
-  if (deviceId == null) return;
+  void updateDeviceFromMqtt(Map<String, dynamic> mqttData) {
+    final deviceId = mqttData['device_id'];
+    if (deviceId == null) return;
 
-  // Find the device in _devices list
-  final index = _devices.indexWhere((d) => d['device_id'] == deviceId);
-  if (index != -1) {
-    // Update existing device
-    _devices[index] = {
-      ..._devices[index],
-      ...mqttData, // overwrite with MQTT payload
-    };
-  } else {
-    // If device not found, optionally add it
-    _devices.add(mqttData);
+    final index = _devices.indexWhere((d) => d['device_id'] == deviceId);
+    if (index != -1) {
+      _devices[index] = {..._devices[index], ...mqttData};
+    } else {
+      _devices.add(mqttData);
+    }
+
+    notifyListeners();
   }
-
-  notifyListeners();
-}
-
 
   // ==========================================================
   // -------------------- TOGGLE PUMP -------------------------
   // ==========================================================
   Future<bool> togglePump(String deviceId, bool turnOn) async {
-    if (authProvider.token == null || selectedOrgId == null) return false;
+    if (authProvider.token == null) return false;
+    final newStatus = turnOn ? 'ON' : 'OFF';
+    return await updateDeviceStatusOnServer(deviceId, 'pump', newStatus);
+  }
 
-    try {
-      final response = await http.post(
-        Uri.parse(DeviceEndpoints.updateDeviceStatus),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${authProvider.token}'
-        },
-        body: jsonEncode({
-          'org_id': selectedOrgId,
-          'device_id': deviceId,
-          'status': turnOn ? 'on' : 'off',
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        await fetchDevices(selectedOrgId!);
-        return true;
-      } else {
-        debugPrint("❌ Failed to toggle pump: ${response.body}");
-        return false;
-      }
-    } catch (e) {
-      debugPrint("🚨 Error toggling pump: $e");
-      return false;
-    }
+  // ==========================================================
+  // -------------------- TOGGLE VALVE ------------------------
+  // ==========================================================
+  Future<bool> toggleValve(String deviceId, String currentStatus) async {
+    if (authProvider.token == null) return false;
+    final newStatus = currentStatus.toUpperCase() == 'OPEN' ? 'CLOSE' : 'OPEN';
+    return await updateDeviceStatusOnServer(deviceId, 'valve', newStatus);
   }
 
   // ==========================================================
@@ -335,7 +298,8 @@ void updateDeviceFromMqtt(Map<String, dynamic> mqttData) {
         final current = device['current_level'];
         if (current > device['max_threshold'] ||
             current < device['min_threshold']) {
-          debugPrint("⚠️ Tank ${device['device_name']} level out of threshold!");
+          debugPrint(
+              "⚠️ Tank ${device['device_name']} level out of threshold!");
         }
       }
     }
@@ -445,5 +409,45 @@ void updateDeviceFromMqtt(Map<String, dynamic> mqttData) {
       fetchParentDevices(orgId),
       fetchBlockModes(orgId),
     ]);
+  }
+
+  // ==========================================================
+  // -------------------- UPDATE DEVICE STATUS ------------------------
+  // ✅ Unified method for pump, valve, tank updates via API only
+  // ==========================================================
+  Future<bool> updateDeviceStatusOnServer(
+      String deviceId, String deviceType, String newStatus) async {
+    if (authProvider.token == null || selectedOrgId == null) return false;
+
+    try {
+      final response = await http.put(
+        Uri.parse(DeviceEndpoints.updateDeviceStatus),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${authProvider.token}'
+        },
+        body: jsonEncode({
+          'org_id': selectedOrgId,
+          'device_id': deviceId,
+          'device_type': deviceType,
+          'status': newStatus,
+        }),
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        // Refresh devices from server
+        await fetchDevices(selectedOrgId!);
+        debugPrint(
+            "✅ Device $deviceId status updated successfully → $newStatus");
+        return true;
+      } else {
+        debugPrint("❌ Failed to update device $deviceId: ${response.body}");
+        return false;
+      }
+    } catch (e, stackTrace) {
+      debugPrint("🚨 Exception updating device $deviceId: $e");
+      debugPrint("🚨 StackTrace: $stackTrace");
+      return false;
+    }
   }
 }
