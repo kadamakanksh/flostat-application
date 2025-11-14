@@ -1,21 +1,78 @@
 {
   "project_info": {
-    "project_number": "1071843966337",
-    "project_id": "flostatapplication",
-    "storage_bucket": "flostatapplication.firebasestorage.app"
+    "project_number": "109848275643",
+    "project_id": "flostat-notification",
+    "storage_bucket": "flostat-notification.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1071843966337:android:a88e124262d1320e993c80",
+        "mobilesdk_app_id": "1:109848275643:android:8ff3b453ecde0d56d6579e",
         "android_client_info": {
-          "package_name": "com.example.flostat_application"
+          "package_name": "com.example.flostat"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyA8ehYM0J8rIMFXPFICNqhkDSepX6fH7go"
+          "current_key": "AIzaSyD2GYzIjJTZlu-Yc8z8vpOkE67ebeAwKwY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:109848275643:android:e84fcf4780cac8add6579e",
+        "android_client_info": {
+          "package_name": "com.example.flostat3"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2GYzIjJTZlu-Yc8z8vpOkE67ebeAwKwY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:109848275643:android:016b6b7bf765328dd6579e",
+        "android_client_info": {
+          "package_name": "com.example.flostat3_super_admin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2GYzIjJTZlu-Yc8z8vpOkE67ebeAwKwY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:109848275643:android:2b5d0ab88ed32dabd6579e",
+        "android_client_info": {
+          "package_name": "com.example.flostattest"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2GYzIjJTZlu-Yc8z8vpOkE67ebeAwKwY"
         }
       ],
       "services": {

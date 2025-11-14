@@ -6,12 +6,12 @@ plugins {
 }
 
 android {
-    namespace = "com.example.flostat_application"
+    namespace = "com.example.flostat"
     compileSdk = 36 // Match your target SDK
     ndkVersion = flutter.ndkVersion
 
     defaultConfig {
-        applicationId = "com.example.flostat_application"
+        applicationId = "com.example.flostat"
         minSdk = flutter.minSdkVersion      // Required for flutter_local_notifications
         targetSdk = 36
         versionCode = 1

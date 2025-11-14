@@ -299,7 +299,7 @@ class DeviceProvider with ChangeNotifier {
         if (current > device['max_threshold'] ||
             current < device['min_threshold']) {
           debugPrint(
-              "⚠️ Tank ${device['device_name']} level out of threshold!");
+              "⚠ Tank ${device['device_name']} level out of threshold!");
         }
       }
     }
@@ -411,6 +411,43 @@ class DeviceProvider with ChangeNotifier {
     ]);
   }
 
+  Future<bool> updateDeviceLevelOnServer(
+      String deviceId, String deviceType, int currentLevel) async {
+    if (authProvider.token == null || selectedOrgId == null) return false;
+
+    try {
+      final response = await http.put(
+        Uri.parse(DeviceEndpoints.updateDeviceStatus),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${authProvider.token}'
+        },
+        body: jsonEncode({
+          'org_id': selectedOrgId,
+          'device_id': deviceId,
+          'device_type': deviceType,
+          'current_level': currentLevel,
+        }),
+      ).timeout(const Duration(seconds: 10));
+      debugPrint("=== UPDATE DEVICE STATUS RESPONSE ===");
+      debugPrint(response.body.toString());
+
+      if (response.statusCode == 200) {
+        // Refresh devices from server
+        await fetchDevices(selectedOrgId!);
+        debugPrint(
+            "✅ Device $deviceId status updated successfully → $currentLevel");
+        return true;
+      } else {
+        debugPrint("❌ Failed to update device $deviceId: ${response.body}");
+        return false;
+      }
+    } catch (e, stackTrace) {
+      debugPrint("🚨 Exception updating device $deviceId: $e");
+      debugPrint("🚨 StackTrace: $stackTrace");
+      return false;
+    }
+  }
   // ==========================================================
   // -------------------- UPDATE DEVICE STATUS ------------------------
   // ✅ Unified method for pump, valve, tank updates via API only
@@ -433,6 +470,8 @@ class DeviceProvider with ChangeNotifier {
           'status': newStatus,
         }),
       ).timeout(const Duration(seconds: 10));
+      debugPrint("=== UPDATE DEVICE STATUS RESPONSE ===");
+      debugPrint(response.body.toString());
 
       if (response.statusCode == 200) {
         // Refresh devices from server
