@@ -2,11 +2,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../providers/org_provider.dart';
 import '../providers/auth_provider.dart';
 import '../config/api_endpoints.dart';
 import 'dashboard_screen_Extended.dart';
 import 'login_screen.dart';
+import '../providers/user_provider.dart';
 
 class OrgSelectionScreen extends StatefulWidget {
   const OrgSelectionScreen({super.key});
@@ -22,7 +24,19 @@ class _OrgSelectionScreenState extends State<OrgSelectionScreen> {
   @override
   void initState() {
     super.initState();
+    _registerFcm();
     _fetchUserOrgs();
+  }
+
+  Future<void> _registerFcm() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+    String? token = await messaging.getToken();
+    print('FCM Token: $token');
+    if (token != null) {
+      await userProvider.registerFcm(fcmToken: token);
+      print("✅ FCM token registered successfully");
+    }
   }
 
   /// 🔹 Fetch all organizations created by the logged-in user

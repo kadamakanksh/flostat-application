@@ -24,6 +24,7 @@ class UserEndpoints {
   static const String acceptInvite = "$BASE_URL/user/acceptInvite";
   static const String updateAccess = "$BASE_URL/user/updateAccess";
   static const String removeUser = "$BASE_URL/user/removeUser";
+  static const String registerFcm = "$BASE_URL/user/register-fcm";
 }
 
 class DeviceEndpoints {

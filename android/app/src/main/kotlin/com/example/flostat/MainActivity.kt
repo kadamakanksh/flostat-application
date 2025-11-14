@@ -1,4 +1,4 @@
-package com.example.flostat_application
+package com.example.flostat
 
 import io.flutter.embedding.android.FlutterActivity
 

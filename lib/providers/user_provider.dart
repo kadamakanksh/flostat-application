@@ -436,6 +436,52 @@ class UserProvider with ChangeNotifier {
       return false;
     }
   }
+/////////////////////////////////////////////////
+  Future<bool> registerFcm({
+    required String fcmToken
+  }) async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        debugPrint("⚠️ Token not found, cannot register FCM.");
+        return false;
+      }
+
+      // 🔹 Changed: backend expected `org_id` (snake_case), not `orgId`
+      final body = {
+        "fcm_token": fcmToken.trim(),
+        "user_device": "mobile", // 🔹 Fixed key name
+      };
+
+      debugPrint("📤 Register FCM : $body"); // ✅ Added debug clarity
+
+      final response = await http.post(
+        Uri.parse(UserEndpoints.registerFcm),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(body),
+      );
+
+      // ✅ Added detailed debug
+      debugPrint("📩 RegisterFcm response (${response.statusCode}): ${response.body}");
+
+      final data = jsonDecode(response.body);
+
+      // ✅ Now checks success + status code
+      if (response.statusCode == 200 && data['success'] == true) {
+        debugPrint("✅ User invited successfully");
+        return true;
+      } else {
+        debugPrint("❌ Failed to invite user: ${data['message'] ?? response.body}");
+        return false;
+      }
+    } catch (e) {
+      debugPrint("⚠️ Error inviting user: $e");
+      return false;
+    }
+  }
 
   // ====================================================
   // -------------------- REMOVE USER -------------------
